@@ -52,7 +52,7 @@ inputs:
     required: false
     default: "false"
   database_engine:
-    description: Database engine: mysql or postgres
+    description: "Database engine: mysql or postgres"
     required: false
     default: mysql
   database_name:
