@@ -54,6 +54,8 @@ func runDeploy(client *ploi.Client, in Inputs) error {
 		}
 	}
 
+	database_url := ""
+
 	// Optional DB
 	if strings.EqualFold(in.CreateDB, "true") || strings.EqualFold(in.CreateDB, "yes") {
 		name := in.DBName
@@ -87,14 +89,16 @@ func runDeploy(client *ploi.Client, in Inputs) error {
 			}
 		}
 		dsn := fmt.Sprintf("%s://%s:%s@%s:%s/%s", scheme, user, pass, in.DBHost, port, name)
-		if err := client.UpdateEnv(in.ServerID, site.ID, map[string]any{"content": "DATABASE_URL=" + dsn}); err != nil {
-			return err
-		}
+		database_url = "DATABASE_URL=" + dsn
 	}
 
 	// Environment
 	if strings.TrimSpace(in.Environment) != "" {
-		if err := client.UpdateEnv(in.ServerID, site.ID, map[string]any{"content": in.Environment}); err != nil {
+		content := in.Environment
+		if database_url != "" {
+			content += "\n" + database_url
+		}
+		if err := client.UpdateEnv(in.ServerID, site.ID, map[string]any{"content": content}); err != nil {
 			return err
 		}
 	}
@@ -237,7 +241,7 @@ func commentPR(token, url string) error {
 	}
 	num := int(numF64)
 	apiURL := fmt.Sprintf("https://api.github.com/repos/%s/issues/%d/comments", repo, num)
-	b, _ := json.Marshal(map[string]string{"body": fmt.Sprintf("Preview: %s", url)})
+	b, _ := json.Marshal(map[string]string{"body": fmt.Sprintf("🚀 Preview environment deployed!\n\nYour changes are now available at: %s\n\n[View deployment](%s) | [autoploi](https://github.com/janyksteenbeek/autoploi)", url, url)})
 	req, _ := http.NewRequest(http.MethodPost, apiURL, bytes.NewReader(b))
 	req.Header.Set("Authorization", "Bearer "+token)
 	req.Header.Set("Accept", "application/vnd.github+json")
