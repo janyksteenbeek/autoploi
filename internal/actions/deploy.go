@@ -69,11 +69,8 @@ func runDeploy(client *ploi.Client, in Inputs) error {
 		if err != nil {
 			return err
 		}
-		payload := map[string]any{"name": user, "password": pass}
-		if db != nil && db.ID > 0 {
-			payload["databases"] = []int64{db.ID}
-		}
-		if err := client.CreateDatabaseUser(in.ServerID, payload); err != nil {
+		payload := map[string]any{"user": user, "password": pass}
+		if err := client.CreateDatabaseUser(in.ServerID, db.ID, payload); err != nil {
 			return err
 		}
 		// DATABASE_URL

@@ -63,8 +63,8 @@ func (c *Client) CreateCertificate(serverID string, siteID int64, payload map[st
 }
 
 func (c *Client) UpdateDeployScript(serverID string, siteID int64, payload map[string]any) error {
-	url := fmt.Sprintf("%s/servers/%s/sites/%d/deploy/script", c.baseURL, serverID, siteID)
-	resp := c.req(http.MethodPatch, url, payload)
+	url := fmt.Sprintf("%s/servers/%s/sites/%d/deploy-script", c.baseURL, serverID, siteID)
+	resp := c.req(http.MethodPut, url, payload)
 	resp.Body.Close()
 	return nil
 }
@@ -85,8 +85,8 @@ func (c *Client) CreateDatabase(serverID string, payload map[string]any) (*Datab
 	return &out.Data, nil
 }
 
-func (c *Client) CreateDatabaseUser(serverID string, payload map[string]any) error {
-	url := fmt.Sprintf("%s/servers/%s/database-users", c.baseURL, serverID)
+func (c *Client) CreateDatabaseUser(serverID string, databaseID int64, payload map[string]any) error {
+	url := fmt.Sprintf("%s/servers/%s/databases/%d/users", c.baseURL, serverID, databaseID)
 	resp := c.req(http.MethodPost, url, payload)
 	resp.Body.Close()
 	return nil
