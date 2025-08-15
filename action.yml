@@ -72,9 +72,11 @@ inputs:
 
 outputs:
   site_id:
-    description: Created or found Ploi site ID
+    description: Site ID (set by deploy and find-site-by-domain)
   url:
-    description: Deployed site URL
+    description: Deployed site URL (set by deploy)
+  deleted:
+    description: "true when delete-site completed successfully"
 
 runs:
   using: docker
@@ -85,7 +87,7 @@ runs:
     SERVER_ID: ${{ inputs.server_id }}
     DOMAIN: ${{ inputs.domain }}
     SITE_ID: ${{ inputs.site_id }}
-    BRANCH: ${{ inputs.branch && inputs.branch || github.ref_name }}
+    BRANCH: ${{ inputs.branch }}
     PROJECT_TYPE: ${{ inputs.project_type }}
     SYSTEM_USER: ${{ inputs.system_user }}
     WEB_DIRECTORY: ${{ inputs.web_directory }}
@@ -99,4 +101,4 @@ runs:
     DB_USER: ${{ inputs.database_user }}
     DB_HOST: ${{ inputs.database_host }}
     DB_PORT: ${{ inputs.database_port }}
-    GITHUB_TOKEN: ${{ github.token }}
+    GITHUB_TOKEN: ${{ inputs.github_token }}
