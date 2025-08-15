@@ -23,6 +23,37 @@ func NewClient(httpClient *http.Client, token string) *Client {
 	return &Client{baseURL: "https://ploi.io/api", hc: httpClient, token: token}
 }
 
+// urlf builds a full API URL by formatting a path and prefixing it with baseURL.
+func (c *Client) urlf(format string, a ...any) string {
+	path := fmt.Sprintf(format, a...)
+	return strings.TrimRight(c.baseURL, "/") + "/" + strings.TrimLeft(path, "/")
+}
+
+// doEnvelope executes the request and decodes the JSON {"data": T} envelope.
+func doEnvelope[T any](c *Client, method, url string, body any) (*T, error) {
+	resp, err := c.req(method, url, body)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+	var out envelope[T]
+	if err := json.NewDecoder(resp.Body).Decode(&out); err != nil {
+		return nil, err
+	}
+	return &out.Data, nil
+}
+
+// doNoContent executes the request where the response body is irrelevant.
+func (c *Client) doNoContent(method, url string, body any) error {
+	resp, err := c.req(method, url, body)
+	if err != nil {
+		return err
+	}
+	io.Copy(io.Discard, resp.Body)
+	resp.Body.Close()
+	return nil
+}
+
 type Site struct {
 	ID       int64  `json:"id"`
 	Domain   string `json:"domain"`
@@ -33,40 +64,24 @@ type envelope[T any] struct {
 	Data T `json:"data"`
 }
 
-type sitesList struct {
-	Data []Site `json:"data"`
-}
-
 func (c *Client) CreateSite(serverID string, body map[string]any) (*Site, error) {
-	url := fmt.Sprintf("%s/servers/%s/sites", c.baseURL, serverID)
-	resp := c.req(http.MethodPost, url, body)
-	defer resp.Body.Close()
-	var out envelope[Site]
-	if err := json.NewDecoder(resp.Body).Decode(&out); err != nil {
-		return nil, err
-	}
-	return &out.Data, nil
+	url := c.urlf("/servers/%s/sites", serverID)
+	return doEnvelope[Site](c, http.MethodPost, url, body)
 }
 
 func (c *Client) InstallRepository(serverID string, siteID int64, payload map[string]any) error {
-	url := fmt.Sprintf("%s/servers/%s/sites/%d/repository", c.baseURL, serverID, siteID)
-	resp := c.req(http.MethodPost, url, payload)
-	resp.Body.Close()
-	return nil
+	url := c.urlf("/servers/%s/sites/%d/repository", serverID, siteID)
+	return c.doNoContent(http.MethodPost, url, payload)
 }
 
 func (c *Client) CreateCertificate(serverID string, siteID int64, payload map[string]any) error {
-	url := fmt.Sprintf("%s/servers/%s/sites/%d/certificates", c.baseURL, serverID, siteID)
-	resp := c.req(http.MethodPost, url, payload)
-	resp.Body.Close()
-	return nil
+	url := c.urlf("/servers/%s/sites/%d/certificates", serverID, siteID)
+	return c.doNoContent(http.MethodPost, url, payload)
 }
 
 func (c *Client) UpdateDeployScript(serverID string, siteID int64, payload map[string]any) error {
-	url := fmt.Sprintf("%s/servers/%s/sites/%d/deploy/script", c.baseURL, serverID, siteID)
-	resp := c.req(http.MethodPatch, url, payload)
-	resp.Body.Close()
-	return nil
+	url := c.urlf("/servers/%s/sites/%d/deploy/script", serverID, siteID)
+	return c.doNoContent(http.MethodPatch, url, payload)
 }
 
 type Database struct {
@@ -75,44 +90,35 @@ type Database struct {
 }
 
 func (c *Client) CreateDatabase(serverID string, payload map[string]any) (*Database, error) {
-	url := fmt.Sprintf("%s/servers/%s/databases", c.baseURL, serverID)
-	resp := c.req(http.MethodPost, url, payload)
-	defer resp.Body.Close()
-	var out envelope[Database]
-	if err := json.NewDecoder(resp.Body).Decode(&out); err != nil {
-		return nil, err
-	}
-	return &out.Data, nil
+	url := c.urlf("/servers/%s/databases", serverID)
+	return doEnvelope[Database](c, http.MethodPost, url, payload)
 }
 
 func (c *Client) CreateDatabaseUser(serverID string, databaseID int64, payload map[string]any) error {
-	url := fmt.Sprintf("%s/servers/%s/databases/%d/users", c.baseURL, serverID, databaseID)
-	resp := c.req(http.MethodPost, url, payload)
-	resp.Body.Close()
-	return nil
+	url := c.urlf("/servers/%s/databases/%d/users", serverID, databaseID)
+	return c.doNoContent(http.MethodPost, url, payload)
 }
 
 func (c *Client) UpdateEnv(serverID string, siteID int64, payload map[string]any) error {
-	url := fmt.Sprintf("%s/servers/%s/sites/%d/env", c.baseURL, serverID, siteID)
-	resp := c.req(http.MethodPut, url, payload)
-	resp.Body.Close()
-	return nil
+	url := c.urlf("/servers/%s/sites/%d/env", serverID, siteID)
+	return c.doNoContent(http.MethodPut, url, payload)
 }
 
 func (c *Client) CreateDaemon(serverID string, siteID int64, payload map[string]any) error {
-	url := fmt.Sprintf("%s/servers/%s/daemons", c.baseURL, serverID)
-	resp := c.req(http.MethodPost, url, payload)
-	resp.Body.Close()
-	return nil
+	url := c.urlf("/servers/%s/daemons", serverID)
+	return c.doNoContent(http.MethodPost, url, payload)
 }
 
 func (c *Client) FindSiteByDomain(serverID, domain string) (*Site, error) {
 	q := url.Values{}
 	q.Set("filter[domain]", domain)
-	endpoint := fmt.Sprintf("%s/servers/%s/sites?%s", c.baseURL, serverID, q.Encode())
-	resp := c.req(http.MethodGet, endpoint, nil)
+	endpoint := c.urlf("/servers/%s/sites?%s", serverID, q.Encode())
+	resp, err := c.req(http.MethodGet, endpoint, nil)
+	if err != nil {
+		return nil, err
+	}
 	defer resp.Body.Close()
-	var list sitesList
+	var list envelope[[]Site]
 	if err := json.NewDecoder(resp.Body).Decode(&list); err != nil {
 		return nil, err
 	}
@@ -125,21 +131,22 @@ func (c *Client) FindSiteByDomain(serverID, domain string) (*Site, error) {
 }
 
 func (c *Client) DeleteSite(serverID string, siteID int64) error {
-	url := fmt.Sprintf("%s/servers/%s/sites/%d", c.baseURL, serverID, siteID)
-	resp := c.req(http.MethodDelete, url, nil)
-	resp.Body.Close()
-	return nil
+	url := c.urlf("/servers/%s/sites/%d", serverID, siteID)
+	return c.doNoContent(http.MethodDelete, url, nil)
 }
 
-func (c *Client) req(method, url string, body any) *http.Response {
+func (c *Client) req(method, url string, body any) (*http.Response, error) {
 	var rdr io.Reader
 	if body != nil {
-		b, _ := json.Marshal(body)
+		b, err := json.Marshal(body)
+		if err != nil {
+			return nil, fmt.Errorf("marshal request body: %w", err)
+		}
 		rdr = bytes.NewReader(b)
 	}
 	req, err := http.NewRequest(method, url, rdr)
 	if err != nil {
-		panic(err)
+		return nil, fmt.Errorf("create request: %w", err)
 	}
 	req.Header.Set("Authorization", "Bearer "+c.token)
 	req.Header.Set("Accept", "application/json")
@@ -148,12 +155,12 @@ func (c *Client) req(method, url string, body any) *http.Response {
 	}
 	resp, err := c.hc.Do(req)
 	if err != nil {
-		panic(err)
+		return nil, fmt.Errorf("http do: %w", err)
 	}
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
 		b, _ := io.ReadAll(resp.Body)
 		resp.Body.Close()
-		panic(fmt.Errorf("HTTP %d: %s", resp.StatusCode, string(b)))
+		return nil, fmt.Errorf("HTTP %d: %s", resp.StatusCode, strings.TrimSpace(string(b)))
 	}
-	return resp
+	return resp, nil
 }
