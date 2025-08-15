@@ -42,7 +42,7 @@ func runDeploy(client *ploi.Client, in Inputs) error {
 		return err
 	}
 
-	// SSL certificate
+	// SSL certificate (Let's Encrypt)
 	if err := client.CreateCertificate(in.ServerID, site.ID, map[string]any{"type": "letsencrypt", "certificate": in.Domain}); err != nil {
 		return err
 	}
