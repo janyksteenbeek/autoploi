@@ -1,5 +1,5 @@
 name: autoploi
-description: Deploy a website to Ploi: create site, install repo, SSL, deploy script, env, database, daemons, and PR comment
+description: Deploy a website to Ploi from GitHub Actions
 author: janyksteenbeek
 
 inputs:

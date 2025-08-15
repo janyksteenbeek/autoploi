@@ -33,7 +33,6 @@ Deploy and manage Ploi sites from GitHub Actions.
     database_engine: mysql
     database_host: 127.0.0.1
     database_port: "3306"
-    github_token: ${{ secrets.GITHUB_TOKEN }}
 ```
 
 Outputs:
@@ -68,15 +67,54 @@ Outputs:
     site_id: ${{ steps.find.outputs.site_id }}
 ```
 
-## Requirements
-- `GITHUB_REPOSITORY` must reflect the repo to install (provided by Actions).
+## Example: use find-site-by-domain output in next step
 
-## Ploi API endpoints
-- Create site: `POST /api/servers/{server}/sites` ([docs](https://developers.ploi.io/32-sites/91-create-site))
-- Install repository: `POST /api/servers/{server}/sites/{site}/repository` ([docs](https://developers.ploi.io/40-repositories/124-install-repository))
-- Create certificate: `POST /api/servers/{server}/sites/{site}/certificates` ([docs](https://developers.ploi.io/43-certificates/134-create-certificate))
-- Update deploy script: `PUT /api/servers/{server}/sites/{site}/deploy-script` ([docs](https://developers.ploi.io/39-deployments/122-update-deploy-script))
-- Update env: `PUT /api/servers/{server}/sites/{site}/env` ([docs](https://developers.ploi.io/41-environment/127-update-env-from-site))
-- Create database: `POST /api/servers/{server}/databases` ([docs](https://developers.ploi.io/33-databases/96-create-database))
-- Create database user: `POST /api/servers/{server}/database-users` ([docs](https://developers.ploi.io/523-database-users/1410-create-database-user))
-- Create daemons: `POST /api/servers/{server}/sites/{site}/daemons`
+```yaml
+yaml
+jobs:
+  manage:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Find site by domain
+        id: find
+        uses: janyksteenbeek/autoploi@v1
+        with:
+          action: find-site-by-domain
+          ploi_token: ${{ secrets.PLOI_TOKEN }}
+          server_id: "12345"
+          domain: example.com
+
+      - name: Delete found site
+        uses: janyksteenbeek/autoploi@v1
+        with:
+          action: delete-site
+          ploi_token: ${{ secrets.PLOI_TOKEN }}
+          server_id: "12345"
+          site_id: ${{ steps.find.outputs.site_id }}
+```
+
+Optional: allow missing site without failing the job
+
+```yaml
+yaml
+- name: Find site by domain (allow missing)
+  id: find
+  continue-on-error: true
+  uses: janyksteenbeek/autoploi@v1
+  with:
+    action: find-site-by-domain
+    ploi_token: ${{ secrets.PLOI_TOKEN }}
+    server_id: "12345"
+    domain: example.com
+
+- name: Delete only if found
+  if: steps.find.outputs.site_id != ''
+  uses: janyksteenbeek/autoploi@v1
+  with:
+    action: delete-site
+    ploi_token: ${{ secrets.PLOI_TOKEN }}
+    server_id: "12345"
+    site_id: ${{ steps.find.outputs.site_id }}
+```
