@@ -100,7 +100,7 @@ func (c *Client) UpdateEnv(serverID string, siteID int64, payload map[string]any
 }
 
 func (c *Client) CreateDaemon(serverID string, siteID int64, payload map[string]any) error {
-	url := fmt.Sprintf("%s/servers/%s/sites/%d/daemons", c.baseURL, serverID, siteID)
+	url := fmt.Sprintf("%s/servers/%s/daemons", c.baseURL, serverID)
 	resp := c.req(http.MethodPost, url, payload)
 	resp.Body.Close()
 	return nil
