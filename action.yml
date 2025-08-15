@@ -45,7 +45,7 @@ inputs:
     description: Lines to write into .env (KEY=VALUE per line)
     required: false
   daemons:
-    description: YAML array of daemon specs. Each item can be a string command or an object with fields: command, path
+    description: "YAML array of daemon specs. Each item can be a string command or an object with fields: command, path"
     required: false
   create_database:
     description: Create a database and user, and set DATABASE_URL
