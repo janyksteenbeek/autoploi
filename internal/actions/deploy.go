@@ -49,7 +49,7 @@ func runDeploy(client *ploi.Client, in Inputs) error {
 
 	// Deploy script
 	if strings.TrimSpace(in.DeployScript) != "" {
-		if err := client.UpdateDeployScript(in.ServerID, site.ID, map[string]any{"content": in.DeployScript}); err != nil {
+		if err := client.UpdateDeployScript(in.ServerID, site.ID, map[string]any{"deploy_script": in.DeployScript}); err != nil {
 			return err
 		}
 	}
