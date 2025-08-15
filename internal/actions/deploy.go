@@ -43,7 +43,7 @@ func runDeploy(client *ploi.Client, in Inputs) error {
 	}
 
 	// SSL certificate
-	if err := client.CreateCertificate(in.ServerID, site.ID, map[string]any{"type": "letsencrypt"}); err != nil {
+	if err := client.CreateCertificate(in.ServerID, site.ID, map[string]any{"type": "letsencrypt", "certificate": in.Domain}); err != nil {
 		return err
 	}
 
@@ -239,7 +239,7 @@ func commentPR(token, url string) error {
 
 // util
 func randomString(n int) string {
-	const alphabet = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+	const alphabet = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*()_+-=[]{}|;:,.<>?"
 	b := make([]byte, n)
 	for i := 0; i < n; i++ {
 		b[i] = alphabet[i%len(alphabet)]
