@@ -107,9 +107,23 @@ func runDeploy(client *ploi.Client, in Inputs) error {
 		}
 		for _, d := range cmds {
 			payload := map[string]any{"command": d.Command}
-			if d.Path != "" {
-				payload["path"] = d.Path
+			if d.SystemUser != "" {
+				payload["system_user"] = d.SystemUser
+			} else {
+				payload["system_user"] = in.SystemUser
 			}
+
+			if d.Path != "" {
+				payload["directory"] = d.Path
+			} else {
+				payload["directory"] = "/home/" + in.SystemUser + "/" + in.Domain
+			}
+			if d.Processes > 0 {
+				payload["processes"] = d.Processes
+			} else {
+				payload["processes"] = 1
+			}
+
 			if err := client.CreateDaemon(in.ServerID, site.ID, payload); err != nil {
 				return err
 			}
@@ -127,8 +141,10 @@ func runDeploy(client *ploi.Client, in Inputs) error {
 
 // YAML parsing (minimal): supports arrays of scalars or maps with command/path.
 type daemonSpec struct {
-	Command string
-	Path    string
+	Command    string
+	Path       string
+	Processes  int
+	SystemUser string
 }
 
 func parseDaemonsYAMLMinimal(s string) ([]daemonSpec, error) {
