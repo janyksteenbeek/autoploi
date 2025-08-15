@@ -1,0 +1,102 @@
+name: autoploi
+description: Deploy a website to Ploi: create site, install repo, SSL, deploy script, env, database, daemons, and PR comment
+author: janyksteenbeek
+
+inputs:
+  action:
+    description: Which action to run (deploy | find-site-by-domain | delete-site)
+    required: false
+    default: deploy
+  ploi_token:
+    description: Ploi API token
+    required: true
+  server_id:
+    description: Target Ploi server ID
+    required: true
+  domain:
+    description: Root domain for the site (e.g. example.com)
+    required: false
+  site_id:
+    description: Site ID (required for delete-site)
+    required: false
+  branch:
+    description: Git branch to deploy (falls back to trigger branch)
+    required: false
+    default: main
+  project_type:
+    description: Optional Ploi project type (laravel, nodejs, etc.)
+    required: false
+  system_user:
+    description: System user to own the site on the server
+    required: false
+    default: ploi
+  web_directory:
+    description: Web directory (e.g. /public)
+    required: false
+    default: /public
+  project_root:
+    description: Project root (e.g. /)
+    required: false
+    default: /
+  deploy_script:
+    description: Deploy script to set for the site
+    required: false
+  environment:
+    description: Lines to write into .env (KEY=VALUE per line)
+    required: false
+  daemons:
+    description: YAML array of daemon specs. Each item can be a string command or an object with fields: command, path
+    required: false
+  create_database:
+    description: Create a database and user, and set DATABASE_URL
+    required: false
+    default: "false"
+  database_engine:
+    description: Database engine: mysql or postgres
+    required: false
+    default: mysql
+  database_name:
+    description: Database name (defaults to domain sanitized)
+    required: false
+  database_user:
+    description: Database user (defaults to domain sanitized)
+    required: false
+  database_host:
+    description: Database host
+    required: false
+    default: 127.0.0.1
+  database_port:
+    description: Database port
+    required: false
+    default: "3306"
+
+outputs:
+  site_id:
+    description: Created or found Ploi site ID
+  url:
+    description: Deployed site URL
+
+runs:
+  using: docker
+  image: Dockerfile
+  env:
+    ACTION: ${{ inputs.action }}
+    PLOI_TOKEN: ${{ inputs.ploi_token }}
+    SERVER_ID: ${{ inputs.server_id }}
+    DOMAIN: ${{ inputs.domain }}
+    SITE_ID: ${{ inputs.site_id }}
+    BRANCH: ${{ inputs.branch && inputs.branch || github.ref_name }}
+    PROJECT_TYPE: ${{ inputs.project_type }}
+    SYSTEM_USER: ${{ inputs.system_user }}
+    WEB_DIRECTORY: ${{ inputs.web_directory }}
+    PROJECT_ROOT: ${{ inputs.project_root }}
+    DEPLOY_SCRIPT: ${{ inputs.deploy_script }}
+    ENVIRONMENT: ${{ inputs.environment }}
+    DAEMONS_YAML: ${{ inputs.daemons }}
+    CREATE_DATABASE: ${{ inputs.create_database }}
+    DB_ENGINE: ${{ inputs.database_engine }}
+    DB_NAME: ${{ inputs.database_name }}
+    DB_USER: ${{ inputs.database_user }}
+    DB_HOST: ${{ inputs.database_host }}
+    DB_PORT: ${{ inputs.database_port }}
+    GITHUB_TOKEN: ${{ github.token }}
